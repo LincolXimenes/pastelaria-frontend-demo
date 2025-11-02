@@ -2,6 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tipografia Personalizada */
+@layer components {
+  /* Títulos de Página */
+  .page-title {
+    @apply text-5xl font-bold text-gray-900 mb-3;
+  }
+  
+  .page-subtitle {
+    @apply text-lg text-gray-600 mb-8;
+  }
+  
+  /* Títulos de Seção */
+  .section-title {
+    @apply text-2xl font-semibold text-gray-800 mb-6;
+  }
+  
+  .section-subtitle {
+    @apply text-base text-gray-600 mb-4;
+  }
+  
+  /* Cards e Containers */
+  .card-base {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .card-content {
+    @apply space-y-4;
+  }
+  
+  /* Layout de Página */
+  .page-container {
+    @apply space-y-12 w-full;
+  }
+  
+  .page-header {
+    @apply mb-8 pb-6 border-b border-gray-200;
+  }
+  
+  /* Grid Responsivo */
+  .responsive-grid {
+    @apply grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .responsive-grid-2 {
+    @apply grid gap-6 grid-cols-1 md:grid-cols-2;
+  }
+  
+  .responsive-grid-3 {
+    @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  /* Botões Customizados */
+  .btn-primary {
+    @apply bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2.5 px-5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-500 hover:bg-gray-600 text-white font-medium py-2.5 px-5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-success {
+    @apply bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  /* Status e Badges */
+  .status-badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .status-pending {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .status-preparing {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .status-ready {
+    @apply bg-green-100 text-green-800;
+  }
+
+  /* Carrinho Mobile */
+  .carrinho-mobile {
+    @apply fixed bottom-4 right-4 z-50 lg:hidden;
+  }
+
+  .carrinho-floating {
+    @apply bg-yellow-500 text-white p-4 rounded-full shadow-lg hover:bg-yellow-600 transition-all duration-200;
+  }
+
+  /* Animações personalizadas */
+  .bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+
+  @keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -27,8 +134,10 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  /* display: flex; */ /* REMOVA ISSO */
+  margin-top: 48px;
+  margin-left: 112px;
+  margin-right: 112px;
+  display: flex; 
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -40,6 +149,8 @@ h1 {
 }
 
 button {
+  column-gap: 16px;
+  row-gap: 12px;
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;

@@ -1,17 +1,15 @@
-import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-6 bg-gray-100 text-black">
+      <main className="flex-1 w-full px-8 py-8">
+        <div className="max-w-screen-2xl mx-auto min-h-[calc(100vh-200px)]">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
       <Footer />
     </div>
   );
