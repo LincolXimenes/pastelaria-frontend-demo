@@ -5,9 +5,9 @@ export default function Header() {
   
   const navItems = [
     { path: '/', label: 'Início' },
-    { path: '/produtos', label: 'Cardápio' },
-    { path: '/dashboard', label: 'Dashboard' },
+    { path: '/produtos', label: 'Novo Pedido' },
     { path: '/pedidos', label: 'Pedidos' },
+    { path: '/dashboard', label: 'Dashboard' },
     { path: '/relatorios', label: 'Relatórios' },
     { path: '/about', label: 'Sobre' }
   ];

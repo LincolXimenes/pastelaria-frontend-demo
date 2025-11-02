@@ -52,8 +52,8 @@ const produtos = [
     id: 6,
     nome: 'Pastel de Chocolate',
     preco: 7.00,
-    descricao: 'Tentação irresistível com chocolate cremoso derretido',
-    imagem: 'https://via.placeholder.com/300x200/92400E/FFFFFF?text=Pastel+Chocolate',
+    descricao: 'Irresistível pastel doce com chocolate derretido cremoso',
+    imagem: 'https://via.placeholder.com/300x200/DC2626/000000?text=Pastel+Chocolate',
     categoria: 'doces',
     popular: false
   }
@@ -63,9 +63,18 @@ export default function Produtos() {
   const [filtroCategoria, setFiltroCategoria] = useState('todos');
   const [filtroPopular, setFiltroPopular] = useState(false);
   const [carrinho, setCarrinho] = useState([]);
-  const [mostrarCarrinho, setMostrarCarrinho] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState('success');
+  
+  // Estados para PDV
+  const [tipoPedido, setTipoPedido] = useState('retirada');
+  const [dadosCliente, setDadosCliente] = useState({
+    nome: '',
+    telefone: '',
+    endereco: '',
+    formaPagamento: 'dinheiro'
+  });
 
   const produtosFiltrados = produtos.filter(produto => {
     const passaCategoria = filtroCategoria === 'todos' || produto.categoria === filtroCategoria;
@@ -87,32 +96,19 @@ export default function Produtos() {
         return [...prevCarrinho, { ...produto, quantidade: 1 }];
       }
     });
-    
-    // Mostrar feedback visual
-    setMostrarCarrinho(true);
-    setTimeout(() => setMostrarCarrinho(false), 3000);
 
-    // Mostrar toast de confirmação
-    setToastMessage(
+    showToastMessage(
       itemExistente 
-        ? `${produto.nome} adicionado novamente! (${itemExistente.quantidade + 1}x)`
-        : `${produto.nome} adicionado ao carrinho! 🎉`
+        ? `${produto.nome} quantidade aumentada!`
+        : `${produto.nome} adicionado ao pedido! 🎉`
     );
-    setShowToast(true);
-
-    // Scroll suave para o carrinho em mobile
-    if (window.innerWidth < 1024) {
-      setTimeout(() => {
-        const carrinhoElement = document.getElementById('carrinho-lateral');
-        carrinhoElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 300);
-    }
   };
 
   const removerDoCarrinho = (produtoId) => {
     setCarrinho(prevCarrinho => 
       prevCarrinho.filter(item => item.id !== produtoId)
     );
+    showToastMessage('Item removido do pedido', 'warning');
   };
 
   const atualizarQuantidade = (produtoId, novaQuantidade) => {
@@ -130,6 +126,71 @@ export default function Produtos() {
     );
   };
 
+  const showToastMessage = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const limparPedido = () => {
+    setCarrinho([]);
+    setDadosCliente({
+      nome: '',
+      telefone: '',
+      endereco: '',
+      formaPagamento: 'dinheiro'
+    });
+    setTipoPedido('retirada');
+    showToastMessage('Pedido limpo com sucesso!', 'info');
+  };
+
+  const finalizarPedido = () => {
+    // Validações
+    if (!dadosCliente.nome.trim()) {
+      showToastMessage('Nome do cliente é obrigatório!', 'error');
+      return;
+    }
+    
+    if (!dadosCliente.telefone.trim()) {
+      showToastMessage('Telefone do cliente é obrigatório!', 'error');
+      return;
+    }
+    
+    if (tipoPedido === 'entrega' && !dadosCliente.endereco.trim()) {
+      showToastMessage('Endereço é obrigatório para entrega!', 'error');
+      return;
+    }
+
+    if (carrinho.length === 0) {
+      showToastMessage('Adicione itens ao pedido!', 'error');
+      return;
+    }
+
+    // Criar pedido
+    const pedido = {
+      id: Date.now(),
+      itens: carrinho,
+      cliente: dadosCliente,
+      tipo: tipoPedido,
+      total: totalCarrinho,
+      data: new Date().toISOString(),
+      status: 'pendente'
+    };
+
+    // Salvar no localStorage
+    const pedidosSalvos = JSON.parse(localStorage.getItem('pedidos') || '[]');
+    pedidosSalvos.push(pedido);
+    localStorage.setItem('pedidos', JSON.stringify(pedidosSalvos));
+    
+    showToastMessage(`Pedido #${pedido.id} finalizado! Total: R$ ${totalCarrinho.toFixed(2)}`, 'success');
+    
+    // Limpar formulário após finalizar
+    setTimeout(() => {
+      limparPedido();
+    }, 2000);
+  };
+
   const totalCarrinho = carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
   const quantidadeTotal = carrinho.reduce((total, item) => total + item.quantidade, 0);
 
@@ -141,12 +202,10 @@ export default function Produtos() {
 
   return (
     <div className="page-container">
-      {/* Header da Página */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6">Nosso Cardápio</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Descubra nossos deliciosos pastéis artesanais, feitos com ingredientes frescos e receitas tradicionais
-        </p>
+      {/* Header simplificado */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Novo Pedido</h1>
+        <p className="text-gray-600">Selecione os produtos do cardápio</p>
       </div>
 
       {/* Filtros */}
@@ -188,183 +247,185 @@ export default function Produtos() {
       {/* Contador de Produtos */}
       <div className="flex justify-between items-center mb-6">
         <p className="text-gray-600">
-          <span className="font-semibold text-gray-800">{produtosFiltrados.length}</span> produto{produtosFiltrados.length !== 1 ? 's' : ''} encontrado{produtosFiltrados.length !== 1 ? 's' : ''}
+          <span className="font-semibold text-gray-800">{produtosFiltrados.length}</span> produto{produtosFiltrados.length !== 1 ? 's' : ''} disponível{produtosFiltrados.length !== 1 ? 'is' : ''}
         </p>
-        <div className="text-sm text-gray-500">
-          💡 Clique em "Adicionar" para incluir no seu pedido
-        </div>
+        {quantidadeTotal > 0 && (
+          <div className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
+            {quantidadeTotal} itens no pedido
+          </div>
+        )}
       </div>
 
-      {/* Layout Principal com Grid e Carrinho */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
-        {/* Grid de Produtos */}
-        <div className="xl:col-span-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {produtosFiltrados.map((produto) => (
-              <div key={produto.id} className="relative">
-                {produto.popular && (
-                  <div className="absolute -top-2 -right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                    ⭐ Popular
-                  </div>
-                )}
-                <CardProduto {...produto} onAdicionar={adicionarAoCarrinho} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Carrinho Lateral */}
-        <div className="xl:col-span-1">
-          <div className="sticky top-8" id="carrinho-lateral">
-            <div className={`card-base transition-all duration-300 ${mostrarCarrinho ? 'ring-2 ring-yellow-400 shadow-lg' : ''}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  🛒 Seu Pedido
-                </h3>
-                {quantidadeTotal > 0 && (
-                  <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    {quantidadeTotal}
-                  </span>
-                )}
-              </div>
-
-              {carrinho.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">🛒</div>
-                  <p className="text-sm">Nenhum item adicionado</p>
-                  <p className="text-xs mt-1">Clique em "Adicionar" nos produtos</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Lista de Itens */}
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {carrinho.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <img 
-                          src={item.imagem} 
-                          alt={item.nome}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-gray-800 truncate">{item.nome}</h4>
-                          <p className="text-xs text-gray-600">R$ {item.preco.toFixed(2)} cada</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-sm"
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center text-sm font-medium">{item.quantidade}</span>
-                          <button
-                            onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
-                            className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-sm"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => removerDoCarrinho(item.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Total e Ações */}
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-semibold text-gray-800">Total:</span>
-                      <span className="text-2xl font-bold text-green-600">
-                        R$ {totalCarrinho.toFixed(2)}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <button className="w-full btn-primary">
-                        🚀 Finalizar Pedido
-                      </button>
-                      <button 
-                        onClick={() => setCarrinho([])}
-                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
-                      >
-                        🗑️ Limpar Carrinho
-                      </button>
-                    </div>
-                  </div>
+      {/* Grid de Produtos */}
+      <div className="mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          {produtosFiltrados.map((produto) => (
+            <div key={produto.id} className="relative">
+              {produto.popular && (
+                <div className="absolute -top-2 -right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                  ⭐ Popular
                 </div>
               )}
+              <CardProduto {...produto} onAdicionar={adicionarAoCarrinho} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Carrinho no Final da Página */}
+      {carrinho.length > 0 && (
+        <div className="mt-16 border-t pt-12" id="carrinho-pedido">
+          <div className="card-base max-w-4xl mx-auto">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+              📋 Finalizar Pedido
+            </h2>
+
+            {/* Grid Layout para Desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              {/* Coluna Esquerda - Itens do Pedido */}
+              <div>
+                <h3 className="font-medium text-gray-800 mb-4">Itens Selecionados ({quantidadeTotal})</h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {carrinho.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <img 
+                        src={item.imagem} 
+                        alt={item.nome}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm text-gray-800 truncate">{item.nome}</h4>
+                        <p className="text-xs text-gray-600">R$ {item.preco.toFixed(2)} cada</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center text-sm font-medium">{item.quantidade}</span>
+                        <button
+                          onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => removerDoCarrinho(item.id)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Coluna Direita - Dados do Cliente */}
+              <div>
+                <h3 className="font-medium text-gray-800 mb-4">Dados do Cliente</h3>
+                
+                {/* Tipo de Pedido */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Pedido</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setTipoPedido('retirada')}
+                      className={`p-3 rounded-lg font-medium transition-all duration-200 ${
+                        tipoPedido === 'retirada'
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      🏪 Retirada
+                    </button>
+                    <button
+                      onClick={() => setTipoPedido('entrega')}
+                      className={`p-3 rounded-lg font-medium transition-all duration-200 ${
+                        tipoPedido === 'entrega'
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      🚚 Entrega
+                    </button>
+                  </div>
+                </div>
+
+                {/* Formulário do Cliente */}
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Nome do cliente *"
+                    value={dadosCliente.nome}
+                    onChange={(e) => setDadosCliente({...dadosCliente, nome: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                  
+                  <input
+                    type="tel"
+                    placeholder="Telefone para contato *"
+                    value={dadosCliente.telefone}
+                    onChange={(e) => setDadosCliente({...dadosCliente, telefone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  />
+                  
+                  {tipoPedido === 'entrega' && (
+                    <textarea
+                      placeholder="Endereço completo para entrega *"
+                      value={dadosCliente.endereco}
+                      onChange={(e) => setDadosCliente({...dadosCliente, endereco: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                    />
+                  )}
+                  
+                  <select
+                    value={dadosCliente.formaPagamento}
+                    onChange={(e) => setDadosCliente({...dadosCliente, formaPagamento: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  >
+                    <option value="dinheiro">💵 Dinheiro</option>
+                    <option value="pix">📱 PIX</option>
+                    <option value="cartao_debito">💳 Cartão de Débito</option>
+                    <option value="cartao_credito">💳 Cartão de Crédito</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {/* Informações Adicionais */}
-            <div className="mt-4 card-base bg-blue-50 border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">ℹ️ Informações</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>• Tempo de preparo: 10-15 min</p>
-                <p>• Delivery grátis acima de R$ 30</p>
-                <p>• Aceitamos PIX, cartão e dinheiro</p>
+            {/* Resumo e Botões */}
+            <div className="mt-8 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="text-center sm:text-left">
+                  <p className="text-2xl font-bold text-green-600">
+                    Total: R$ {totalCarrinho.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {tipoPedido === 'entrega' ? '🚚 Entrega' : '🏪 Retirada'} • {dadosCliente.formaPagamento.replace('_', ' ')}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={limparPedido}
+                    className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-200"
+                  >
+                    🗑️ Limpar
+                  </button>
+                  <button
+                    onClick={finalizarPedido}
+                    disabled={!dadosCliente.nome || !dadosCliente.telefone || (tipoPedido === 'entrega' && !dadosCliente.endereco)}
+                    className="px-8 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200"
+                  >
+                    ✅ Finalizar Pedido
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Mensagem quando não há produtos */}
-      {produtosFiltrados.length === 0 && (
-        <div className="col-span-full text-center py-16">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhum produto encontrado</h3>
-          <p className="text-gray-500 mb-6">Tente ajustar os filtros para ver mais opções</p>
-          <button
-            onClick={() => {
-              setFiltroCategoria('todos');
-              setFiltroPopular(false);
-            }}
-            className="btn-primary"
-          >
-            Limpar Filtros
-          </button>
-        </div>
-      )}
-
-      {/* Call to Action */}
-      <div className="mt-12 text-center">
-        <div className="card-base bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
-          <h3 className="text-2xl font-bold text-gray-800 mb-3">Gostou do que viu? 😋</h3>
-          <p className="text-gray-600 mb-6">
-            Nossos pastéis são feitos na hora! Visite nossa loja ou entre em contato para fazer seu pedido.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="btn-primary">
-              📞 Fazer Pedido por Telefone
-            </button>
-            <button className="bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-5 rounded-lg transition-colors duration-200">
-              📍 Como Chegar na Loja
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Botão Carrinho Flutuante para Mobile */}
-      {quantidadeTotal > 0 && (
-        <div className="fixed bottom-6 right-6 lg:hidden z-50">
-          <button 
-            onClick={() => {
-              const carrinhoElement = document.getElementById('carrinho-lateral');
-              carrinhoElement?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110 bounce-in"
-          >
-            <div className="flex items-center gap-2">
-              <span>🛒</span>
-              <span className="bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full">
-                {quantidadeTotal}
-              </span>
-            </div>
-          </button>
         </div>
       )}
 
@@ -372,7 +433,7 @@ export default function Produtos() {
       <Toast 
         message={toastMessage}
         show={showToast}
-        type="success"
+        type={toastType}
         onClose={() => setShowToast(false)}
       />
     </div>

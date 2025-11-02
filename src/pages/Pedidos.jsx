@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Pedidos() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [pedidosLocalStorage, setPedidosLocalStorage] = useState([]);
+  
+  useEffect(() => {
+    // Carregar pedidos do localStorage
+    const pedidosSalvos = JSON.parse(localStorage.getItem('pedidos') || '[]');
+    setPedidosLocalStorage(pedidosSalvos);
+  }, []);
   
   const pedidos = [
     {
@@ -61,16 +68,39 @@ export default function Pedidos() {
     }
   ];
 
-  const pedidosFiltrados = pedidos.filter(pedido => 
+  // Converter pedidos do localStorage para o formato da página
+  const pedidosConvertidos = pedidosLocalStorage.map(pedido => ({
+    id: `#${pedido.id}`,
+    cliente: pedido.cliente.nome,
+    telefone: pedido.cliente.telefone,
+    itens: pedido.itens.map(item => ({
+      nome: item.nome,
+      quantidade: item.quantidade,
+      preco: item.preco
+    })),
+    total: pedido.total,
+    status: 'Pendente', // Novos pedidos começam como pendente
+    hora: new Date(pedido.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    tempoEstimado: 'Aguardando',
+    observacoes: `${pedido.tipo === 'entrega' ? '🚚 Entrega' : '🏪 Retirada'} - ${pedido.cliente.formaPagamento.replace('_', ' ')}`,
+    endereco: pedido.tipo === 'entrega' ? pedido.cliente.endereco : null,
+    tipo: pedido.tipo,
+    formaPagamento: pedido.cliente.formaPagamento
+  }));
+
+  // Combinar pedidos mock com pedidos reais
+  const todosPedidos = [...pedidosConvertidos, ...pedidos];
+
+  const pedidosFiltrados = todosPedidos.filter(pedido => 
     filtroStatus === 'todos' || pedido.status.toLowerCase() === filtroStatus.toLowerCase()
   );
 
   const statusOptions = [
-    { value: 'todos', label: 'Todos', count: pedidos.length, color: 'gray' },
-    { value: 'pendente', label: 'Pendentes', count: pedidos.filter(p => p.status === 'Pendente').length, color: 'red' },
-    { value: 'preparando', label: 'Preparando', count: pedidos.filter(p => p.status === 'Preparando').length, color: 'yellow' },
-    { value: 'pronto', label: 'Prontos', count: pedidos.filter(p => p.status === 'Pronto').length, color: 'green' },
-    { value: 'entregue', label: 'Entregues', count: pedidos.filter(p => p.status === 'Entregue').length, color: 'blue' }
+    { value: 'todos', label: 'Todos', count: todosPedidos.length, color: 'gray' },
+    { value: 'pendente', label: 'Pendentes', count: todosPedidos.filter(p => p.status === 'Pendente').length, color: 'red' },
+    { value: 'preparando', label: 'Preparando', count: todosPedidos.filter(p => p.status === 'Preparando').length, color: 'yellow' },
+    { value: 'pronto', label: 'Prontos', count: todosPedidos.filter(p => p.status === 'Pronto').length, color: 'green' },
+    { value: 'entregue', label: 'Entregues', count: todosPedidos.filter(p => p.status === 'Entregue').length, color: 'blue' }
   ];
 
   const getStatusConfig = (status) => {
@@ -119,9 +149,9 @@ export default function Pedidos() {
       <div className="page-header">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="page-title">Gerenciamento de Pedidos</h1>
-            <p className="page-subtitle mb-0">
-              Acompanhe e gerencie todos os pedidos da sua pastelaria em tempo real
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Pedidos</h1>
+            <p className="text-gray-600">
+              Gerencie os pedidos recebidos
             </p>
           </div>
           <div className="mt-4 md:mt-0">
