@@ -1,15 +1,40 @@
 import React from 'react';
+import CardProduto from '../components/CardProduto';
+
+const produtos = [
+  {
+    id: 1,
+    nome: "Pastel de Carne",
+    preco: 8.5,
+    descricao: "Com bastante recheio",
+    imagem: "https://via.placeholder.com/150"
+  },
+  {
+    id: 2,
+    nome: "Pastel de Queijo",
+    preco: 8.0,
+    descricao: "Derretido e crocante",
+    imagem: "https://via.placeholder.com/150"
+  },
+  {
+    id: 3,
+    nome: "Pastel de Frango",
+    preco: 8.5,
+    descricao: "Com catupiry",
+    imagem: "https://via.placeholder.com/150"
+  }
+];
 
 
-export default function CardProduto({ nome, preco, descricao, imagem }) {
-    return (
-        <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center">
-            {imagem && (
-                <img src={imagem} alt={nome} className="w-32 h-32 object-cover rounded mb-2" />
-            )}
-            <h3 className="text-lg font-bold">{nome}</h3>
-            <p className="text-gray-600">{descricao}</p>
-            <span className="text-green-600 font-semibold mt-2">R$ {preco}</span>
-        </div>
-    );
+export default function Produtos() {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Nosso Cardápio</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {produtos.map((produto) => (
+          <CardProduto key={produto.id} {...produto} />
+        ))}
+      </div>
+    </div>
+  );
 }
